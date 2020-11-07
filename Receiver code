@@ -1,0 +1,97 @@
+#include <Servo.h>    //the library which helps us to control the servo motor
+#include <SPI.h>      //the communication interface with the modem
+#include "RF24.h"     //the library which helps us to control the radio modem
+
+//define the servo name
+Servo Servo_1;
+Servo Servo_3;
+Servo Servo_4;
+Servo Servo_2;
+
+
+RF24 radio(8,10);     /*This object represents a modem connected to the Arduino. 
+                      Arguments 8 and 10 are a digital pin numbers to which signals 
+                      CE and CSN are connected.*/
+
+const byte_address[6] = "00001";
+
+int msg[4];
+
+void setup(){
+
+  //define the servo input pins
+  Servo_1.attach(15); //A1(Gripper)
+  Servo_2.attach(16); //A2(Forward/Reverse)
+  Servo_3.attach(17); //A3(Left/Right)
+  Servo_4.attach(18); //A4(Up/Down)
+  
+  
+  
+radio.begin();
+	radio.openReadingPipe(0,byte_address);
+	radio.startListening();
+
+
+  }
+
+
+void loop(){
+  if(radio.available()){
+    bool done = false;
+    while (!done)
+{
+    done = radio.read(msg, sizeof(msg));
+
+    
+
+
+int gripper;
+if(msg[0] > 750)      
+        {
+          gripper = 0;
+        }
+        else
+        {
+          gripper = 180;
+        }
+   servo_3.write(gripper);               
+if(msg[1] >=0 && msg[1] <= 60) 
+  {
+     int mov1 = map(msg[1],0,60,0,90);
+     Serial.print("Movement in F/R = ");
+     Serial.print(mov1);
+     Serial.println((char)176);
+     servo_1.write(mov1);
+  } 
+else if(msg[1] >=300 && msg[1] <= 360) 
+  {
+     int mov2 = map(msg[1],360,250,0,90);
+     Serial.print("Movement in Up/Down = ");
+     Serial.print(mov2);
+     Serial.println((char)176);
+     servo_2.write(mov2);
+  } 
+if(msg[2] >=0 && msg[2] <= 60) 
+  {
+     int mov3 = map(msg[2],0,60,90,180);
+     Serial.print("Movement in Left = ");
+     Serial.print(mov3);
+     Serial.println((char)176);
+     servo_4.write(mov3);
+  } 
+else if(msg[2] >=300 && msg[2] <= 360) 
+  {
+     int mov3 = map(msg[2],360,300,90,0);
+     Serial.print("Movement in Right = ");
+     Serial.print(mov3);
+     Serial.println((char)176);
+     servo_4.write(mov3);
+  }
+
+    
+
+
+}
+  }
+}
+
