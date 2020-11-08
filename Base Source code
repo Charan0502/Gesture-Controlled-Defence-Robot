@@ -1,0 +1,320 @@
+/* include library */
+#include <ESP8266WiFi.h>
+
+#include"Adafruit_MQTT.h" 
+#include"Adafruit_MQTT_Client.h" 
+#define S3 D0 
+#define S2 D1 
+#define S1 D2 
+#define S0 D3 
+#define analogpin A0 
+
+
+/* define port */
+WiFiClient client;
+WiFiServer server(80);
+
+
+
+/*************************Adafruit.ioSetup *********************************/ 
+ 
+ 
+#defineAIO_SERVER     "io.adafruit.com" 
+#defineAIO_SERVERPORT 1883                  // use 8883 for SSL 
+#defineAIO_USERNAME   "USERNAME" 
+#defineAIO_KEY        "AIOKEY" 
+ 
+ 
+/************ Global State (you don't need to change this!) ******************/ 
+ 
+ 
+// Create an ESP8266WiFiClientclass to connect to the MQTT server. 
+WiFiClientclient; 
+// or... useWiFiFlientSecurefor SSL 
+//WiFiClientSecureclient; 
+ 
+ 
+// Setup the MQTT client class by passing in theWiFiclient and MQTT server and login details. 
+Adafruit_MQTT_Clientmqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY); 
+ 
+ 
+/****************************** Feeds ***************************************/ 
+ 
+ 
+// Setup a feed called 'photocell' for publishing. 
+// Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname> 
+Adafruit_MQTT_Publishsensor_1 =Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME"/feeds/sensor-1"); 
+Adafruit_MQTT_Publishsensor_2 =Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME"/feeds/sensor-2"); 
+Adafruit_MQTT_Publishsensor_3 =Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME"/feeds/sensor-3"); 
+Adafruit_MQTT_Publishsensor_4 =Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME"/feeds/sensor-4"); 
+// Setup a feed called 'onoff' for subscribing to changes. 
+//Adafruit_MQTT_Subscribeonoffbutton=Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onoff"); 
+ 
+ 
+
+/* WIFI settings */
+const char* ssid = "YOUR SSID";
+const char* password = "YOUR PASSWORD";
+
+/* data received from application */
+String  data =""; 
+
+/* define L298N or L293D motor control pins */
+int leftMotorForward = 2;     /* GPIO2(D4) -> IN3   */
+int rightMotorForward = 15;   /* GPIO15(D8) -> IN1  */
+int leftMotorBackward = 0;    /* GPIO0(D3) -> IN4   */
+int rightMotorBackward = 13;  /* GPIO13(D7) -> IN2  */
+
+
+/* define L298N or L293D enable pins */
+int rightMotorENB = 14; /* GPIO14(D5) -> Motor-A Enable */
+int leftMotorENB = 12;  /* GPIO12(D6) -> Motor-B Enable */
+
+void MQTT_connect(); 
+
+void setup()
+{
+  
+ Serial.begin(115200); 
+ delay(10); 
+ pinMode(analogpin, INPUT); 
+ pinMode(S0,OUTPUT); 
+ pinMode(S1,OUTPUT); 
+ pinMode(S2,OUTPUT); 
+ pinMode(S3,OUTPUT);   
+ 
+ 
+ Serial.println(F("AdafruitMQTT demo")); 
+ 
+ 
+ // Connect toWiFiaccess point. 
+ Serial.println();Serial.println(); 
+ Serial.print("Connecting to"); 
+ Serial.println(WLAN_SSID); 
+ 
+ 
+ WiFi.begin(WLAN_SSID, WLAN_PASS); 
+ while(WiFi.status() != WL_CONNECTED) { 
+   delay(500); 
+   Serial.print("."); 
+  } 
+ Serial.println(); 
+ 
+ 
+ Serial.println("WiFiconnected"); 
+ Serial.println("IP address:");Serial.println(WiFi.localIP()); 
+ 
+ 
+ // Setup MQTT subscription foronofffeed. 
+ //mqtt.subscribe(&onoffbutton); 
+} 
+ 
+ 
+uint32_tx=0; 
+
+  
+  /* initialize motor control pins as output */
+  pinMode(leftMotorForward, OUTPUT);
+  pinMode(rightMotorForward, OUTPUT); 
+  pinMode(leftMotorBackward, OUTPUT);  
+  pinMode(rightMotorBackward, OUTPUT);
+
+  /* initialize motor enable pins as output */
+  pinMode(leftMotorENB, OUTPUT); 
+  pinMode(rightMotorENB, OUTPUT);
+
+  /* start server communication */
+  server.begin();
+}
+
+void loop()
+{
+   
+     MQTT_connect(); 
+ 
+ 
+  
+ 
+ 
+ // Now we can publish stuff! 
+ Serial.print(F("\nSendingSensor's Value")); 
+ digitalWrite(S0,LOW); 
+ digitalWrite(S1,LOW); 
+ digitalWrite(S2,LOW); 
+ digitalWrite(S3,LOW); 
+ Serial.print("Sensor 1");Serial.println(analogRead(analogpin)); 
+ Serial.print("..."); 
+ intValue =analogRead(analogpin); 
+ if(! sensor_1.publish(Value)) { 
+   Serial.println(F("Failed")); 
+  }else{ 
+   Serial.println(F("OK!")); 
+  } 
+ 
+ 
+ digitalWrite(S0,HIGH); 
+ digitalWrite(S1,LOW); 
+ digitalWrite(S2,LOW); 
+ digitalWrite(S3,LOW); 
+ Serial.print("Sensor 2");Serial.println(analogRead(analogpin)); 
+ Serial.print("..."); 
+  Value =analogRead(analogpin); 
+ if(! sensor_2.publish(Value)) { 
+   Serial.println(F("Failed")); 
+  }else{ 
+   Serial.println(F("OK!")); 
+  } 
+ 
+ 
+ digitalWrite(S0,LOW); 
+ digitalWrite(S1,HIGH); 
+ digitalWrite(S2,LOW); 
+ digitalWrite(S3,LOW); 
+ Serial.print("Sensor 3");Serial.println(analogRead(analogpin)); 
+ Serial.print("..."); 
+  Value =analogRead(analogpin); 
+ if(! sensor_3.publish(Value)) { 
+   Serial.println(F("Failed")); 
+  }else{ 
+   Serial.println(F("OK!")); 
+  } 
+ 
+ 
+ digitalWrite(S0,HIGH); 
+ digitalWrite(S1,HIGH); 
+ digitalWrite(S2,LOW); 
+ digitalWrite(S3,LOW); 
+ Serial.print("Sensor 4");Serial.println(analogRead(analogpin)); 
+ Serial.print("..."); 
+  Value =analogRead(analogpin); 
+ if(! sensor_4.publish(Value)) { 
+   Serial.println(F("Failed")); 
+  }else{ 
+   Serial.println(F("OK!")); 
+  } 
+ 
+ 
+ delay(2000); 
+ // ping the server to keep themqttconnection alive 
+ // NOT required if you are publishing once every KEEPALIVE seconds 
+ /* 
+  if(!mqtt.ping()) { 
+   mqtt.disconnect(); 
+  } 
+  */ 
+} 
+ 
+ 
+// Function to connect and reconnect as necessary to the MQTT server. 
+// Should be called in the loop function and it will take care if connecting. 
+void MQTT_connect() 
+{ 
+ int8_tret; 
+ 
+}
+ // Stop if already connected. 
+ if(mqtt.connected()) { 
+   return; 
+  } 
+ 
+ 
+ Serial.print("Connecting to MQTT..."); 
+ 
+ 
+ uint8_tretries =3; 
+ while((ret =mqtt.connect()) !=0) {// connect will return 0 for connected 
+      Serial.println(mqtt.connectErrorString(ret)); 
+      Serial.println("Retrying MQTT connection in 5 seconds..."); 
+      mqtt.disconnect(); 
+      delay(5000); // wait 5 seconds 
+       retries--; 
+      if(retries ==0) { 
+        // basically die and wait for WDT to reset me 
+        while(1); 
+       } 
+  } 
+ Serial.println("MQTT Connected!"); 
+
+    /* If the server available, run the "checkClient" function */  
+    client = server.available();
+    if (!client) return; 
+    data = checkClient ();
+
+/************************ Run function according to incoming data from application *************************/
+
+    /* If the incoming data is "forward", run the "MotorForward" function */
+    if (data == "forward") MotorForward();
+    /* If the incoming data is "backward", run the "MotorBackward" function */
+    else if (data == "backward") MotorBackward();
+    /* If the incoming data is "left", run the "TurnLeft" function */
+    else if (data == "left") TurnLeft();
+    /* If the incoming data is "right", run the "TurnRight" function */
+    else if (data == "right") TurnRight();
+    /* If the incoming data is "stop", run the "MotorStop" function */
+    else if (data == "stop") MotorStop();
+} 
+
+/********************************************* FORWARD *****************************************************/
+void MotorForward(void)   
+{
+  digitalWrite(leftMotorENB,HIGH);
+  digitalWrite(rightMotorENB,HIGH);
+  digitalWrite(leftMotorForward,HIGH);
+  digitalWrite(rightMotorForward,HIGH);
+  digitalWrite(leftMotorBackward,LOW);
+  digitalWrite(rightMotorBackward,LOW);
+}
+
+/********************************************* BACKWARD *****************************************************/
+void MotorBackward(void)   
+{
+  digitalWrite(leftMotorENB,HIGH);
+  digitalWrite(rightMotorENB,HIGH);
+  digitalWrite(leftMotorBackward,HIGH);
+  digitalWrite(rightMotorBackward,HIGH);
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(rightMotorForward,LOW);
+}
+
+/********************************************* TURN LEFT *****************************************************/
+void TurnLeft(void)   
+{
+  digitalWrite(leftMotorENB,HIGH);
+  digitalWrite(rightMotorENB,HIGH); 
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(rightMotorForward,HIGH);
+  digitalWrite(rightMotorBackward,LOW);
+  digitalWrite(leftMotorBackward,HIGH);  
+}
+
+/********************************************* TURN RIGHT *****************************************************/
+void TurnRight(void)   
+{
+  digitalWrite(leftMotorENB,HIGH);
+  digitalWrite(rightMotorENB,HIGH);
+  digitalWrite(leftMotorForward,HIGH);
+  digitalWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,HIGH);
+  digitalWrite(leftMotorBackward,LOW);
+}
+
+/********************************************* STOP *****************************************************/
+void MotorStop(void)   
+{
+  digitalWrite(leftMotorENB,LOW);
+  digitalWrite(rightMotorENB,LOW);
+  digitalWrite(leftMotorForward,LOW);
+  digitalWrite(leftMotorBackward,LOW);
+  digitalWrite(rightMotorForward,LOW);
+  digitalWrite(rightMotorBackward,LOW);
+}
+
+/********************************** RECEIVE DATA FROM the APP ******************************************/
+String checkClient (void)
+{
+  while(!client.available()) delay(1); 
+  String request = client.readStringUntil('\r');
+  request.remove(0, 5);
+  request.remove(request.length()-9,9);
+  return request;
+}
